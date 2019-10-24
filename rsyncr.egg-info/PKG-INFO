@@ -1,0 +1,11 @@
+Metadata-Version: 1.2
+Name: rsyncr
+Version: 0.1.0
+Summary: Hackety thing to run rsync to backup files. Convenience/wrapper hacks.
+Home-page: UNKNOWN
+Author: Matt Feifarek
+Author-email: matt.feifarek@gmail.com
+License: UNKNOWN
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires-Python: >=3.7,<4.0

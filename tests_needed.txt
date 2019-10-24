@@ -1,0 +1,14 @@
+config:
+
+    parsing:
+    - test missing location, target_root
+    - test missing sources
+    - test machine excludes
+    - test excludes properly added between machine and a source
+    - test filenames are built properly when missing or have extra slashes
+    - test that location "local" works and resolves properly
+    - test that non-local machines make it through parsing and work properly
+        - maybe ssh over some files, then try to rsync them?
+
+run:
+    - what happens when there is an error message from rsync?

@@ -1,0 +1,3 @@
+executor<22.0,>=21.3
+telegram-send<0.25,>=0.24
+tomlkit<0.6.0,>=0.5.8

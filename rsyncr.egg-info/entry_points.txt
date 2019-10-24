@@ -1,0 +1,3 @@
+[console_scripts]
+rsyncr = rsyncr.run:cli
+

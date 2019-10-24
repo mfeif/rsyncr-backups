@@ -1,0 +1,10 @@
+location = "pasilla:"
+target_root = "/tmp/frobagge"
+excludes = [
+    "/.snapshots/",
+    "restic_caches",
+]
+
+[sources.test]
+location = "/Users/mjf/Exercism"
+target = "exr"
