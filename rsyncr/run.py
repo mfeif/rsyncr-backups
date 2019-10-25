@@ -11,7 +11,7 @@ from rsyncr import message
 log = logging.getLogger()
 
 
-def build_command(source, target, excludes, dry_run=False):
+def build_command(source, target, excludes, dry_run=False, verbose=False):
     """Make a list that corresponds to the rsync command line"""
     log.debug(
         f"""running build_command with source={source}, """
@@ -21,6 +21,8 @@ def build_command(source, target, excludes, dry_run=False):
     command = [config.RSYNC]
     if dry_run:
         command.append("--dry-run")
+    if verbose:
+        command.append("--verbose")
     for g in config.GLOBAL_RSYNC_PARAMS:
         command.append(g)
 
@@ -50,18 +52,39 @@ def call_command(cmdargs):
         return output
 
 
-def process_machine(name, dry_run=False, verbose=False, override_filename=None):
+def process_machine(
+    name,
+    dry_run=None,
+    verbose=None,
+    override_config_path=None,
+    config_dir=None,
+    global_config_path=None,
+):
     """Handle the directories associated with 'name' for backups"""
     message_text = f"RsyncR is processing config {name}\n"
-    conf = config.get(name, override_filename)
+    # global configs
+    gconf = config.get_global(global_config_path)
+    gexc = gconf.get("global_excludes", [])
+
+    # per-machine configs
+    conf = config.get(name, override_config_path)
     # check for machine-wide excludes
     machine_exc = conf.get("excludes", [])
+
+    # command line switches will override configs in toml,
+    # and local machine configs will override global configs
+    if dry_run is None:
+        dry_run = conf.get("dry_run", gconf.get("dry_run", False))
+    if verbose is None:
+        verbose = conf.get("verbose", gconf.get("verbose", False))
+
     # now the directories/sources for sync'ing
     for name, d in conf["sources"].items():
         src = d["location"]
         trg = d["target"]
-        exc = machine_exc + d.get("excludes", [])
-        cmdlist = build_command(src, trg, exc, dry_run)
+        exc = gexc + machine_exc + d.get("excludes", [])
+        # @@ not yet adding global rsync params logic here @@ !
+        cmdlist = build_command(src, trg, exc, dry_run, verbose)
         message_text += f"\nSource {name}: {src} to {trg}\n"
         out = call_command(cmdlist)
         message_text += out
@@ -74,18 +97,38 @@ def process_machine(name, dry_run=False, verbose=False, override_filename=None):
 
 def cli():
     parser = argparse.ArgumentParser()
-    parser.add_argument("config", help="unique config name to read for rsync commands.")
     parser.add_argument(
-        "--dry-run", help="whether to simulate the action", action="store_true"
+        "config",
+        help="unique machine/config name to read for rsync commands. example: mymachine",
     )
     parser.add_argument(
-        "--verbose", help="pass verbose flag onto rsync", action="store_true"
+        "--override_config_path", help="(optional) what machine toml file to use"
     )
+
+    parser.add_argument(
+        "--configs_dir", help="(optional) where to look for machine toml files"
+    )
+
+    parser.add_argument(
+        "--global_config_path", help="(optional) override global config settings"
+    )
+    parser.add_argument("--dry-run", help="whether to simulate the action")
+    parser.add_argument("--verbose", help="pass verbose flag onto rsync")
     args = parser.parse_args()
     name = args.config
     dry = args.dry_run
-    verbose = args.verbose
-    process_machine(name, dry, verbose)
+    ver = args.verbose
+    opath = args.override_config_path
+    gcfg = args.global_config_path
+    cfgdir = args.configs_dir
+    process_machine(
+        name,
+        dry_run=dry,
+        verbose=ver,
+        override_config_path=opath,
+        config_dir=cfgdir,
+        global_config_path=gcfg,
+    )
 
 
 if __name__ == "__main__":

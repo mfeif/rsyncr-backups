@@ -1,0 +1,32 @@
+# this file is generally at /etc/rsyncr/global.toml
+# and has things that apply to all rsyncr jobs
+# run from this machine; mostly switches thrown at rsync
+
+# all these are optional, and have defaults in the python code
+
+# configs_dir = "/root/rsyncr"
+
+# if you need to tell explicit path for rsync
+#rsync_command = "/usr/local/bin/rsync"
+
+verbose = false
+dry_run = false
+
+# standard levels from logging module... info, warning, debug, etc
+#logging_level = "warning"
+
+# this would be a list of strings that will be passed to rsync
+# in lieu of what's in rsyncr.config.py... careful, this will likely
+# bork your backups
+#override_rsync_params = []
+
+# this would be to add some more switches to rsync, perhaps ssh settings
+# or the like
+added_rsync_params = []
+
+# what paths should be excluded for every rsyncr job executed from this machine
+global_excludes = [".DS_Store", "*__pycache__", "*pytest_cache"]
+
+
+# tbd: stuff here to pass to 'telegram_send'
+#telegram_send_conf = "/etc/rsyncr/telegram_send.conf"
