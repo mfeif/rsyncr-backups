@@ -99,7 +99,7 @@ def cli():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "config",
-        help="unique machine/config name to read for rsync commands. example: mymachine",
+        help="unique machine/config name to read for rsync commands. example: mycomp",
     )
     parser.add_argument(
         "--override_config_path", help="(optional) what machine toml file to use"
@@ -112,7 +112,9 @@ def cli():
     parser.add_argument(
         "--global_config_path", help="(optional) override global config settings"
     )
-    parser.add_argument("--dry-run", help="whether to simulate the action")
+    parser.add_argument(
+        "--dry-run", help="whether to simulate the action", action="store_true"
+    )
     parser.add_argument("--verbose", help="pass verbose flag onto rsync")
     args = parser.parse_args()
     name = args.config
