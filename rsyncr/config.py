@@ -104,7 +104,7 @@ def check_config(conf):
                 os.path.join(conf["target_root"], conf["sources"][n]["target"])
             )
         # if the location isn't local, os.path.join strips off the machine part, so:
-        if conf["location"] != "local":
+        if conf["location"] != "/":
             conf["sources"][n]["location"] = (
                 conf["location"] + conf["sources"][n]["location"]
             )
