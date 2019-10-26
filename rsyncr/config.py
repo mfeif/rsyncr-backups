@@ -80,12 +80,10 @@ def check_config(conf):
 
     for n in conf["sources"]:
         # these need a location, a target, and optional excludes
-        assert (
-            "location" in conf["sources"][n]
-        ), f"Need a 'location' for the sources {n}!"
+        assert "location" in conf["sources"][n], f"Need a 'location' in sources {n}!"
         assert (
             conf["sources"][n]["location"][0] == "/"
-        ), f"""'{conf["sources"][n]['location']}' needs to be a valid path, for the sources {n}!"""
+        ), f"""'{conf["sources"][n]['location']}' needs to be a valid path in sources {n}!"""
 
         conf["sources"][n]["location"] = fix_trailing_slashes(
             conf["sources"][n]["location"]
@@ -94,9 +92,17 @@ def check_config(conf):
         conf["sources"][n]["location"] = fix_trailing_slashes(
             os.path.join(conf["location"], conf["sources"][n]["location"])
         )
-        conf["sources"][n]["target"] = fix_trailing_slashes(
-            os.path.join(conf["target_root"], conf["sources"][n]["target"])
-        )
+
+        # we CAN override the normal behavior or root + target, and have an explicit
+        # target in a source:
+        if "target_full_path" in conf["sources"][n]:
+            conf["sources"][n]["target"] = fix_trailing_slashes(
+                conf["sources"][n]["target_full_path"]
+            )
+        else:
+            conf["sources"][n]["target"] = fix_trailing_slashes(
+                os.path.join(conf["target_root"], conf["sources"][n]["target"])
+            )
         # if the location isn't local, os.path.join strips off the machine part, so:
         if conf["location"] != "local":
             conf["sources"][n]["location"] = (
