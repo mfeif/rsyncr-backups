@@ -17,6 +17,7 @@ rsyncr = 'rsyncr.run:cli'
 pytest = "^3.0"
 black = {version = "^19.3b0", allows-prereleases = true}
 flake8 = "^3.7.8"
+
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
