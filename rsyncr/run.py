@@ -115,7 +115,9 @@ def cli():
     parser.add_argument(
         "--dry-run", help="whether to simulate the action", action="store_true"
     )
-    parser.add_argument("--verbose", help="pass verbose flag onto rsync")
+    parser.add_argument(
+        "--verbose", help="pass verbose flag onto rsync", action="store_true"
+    )
     args = parser.parse_args()
     name = args.config
     dry = args.dry_run
