@@ -59,6 +59,7 @@ def process_machine(
     override_config_path=None,
     config_dir=None,
     global_config_path=None,
+    console_output=False,
 ):
     """Handle the directories associated with 'name' for backups"""
     message_text = f"RsyncR is processing config {name}\n"
@@ -86,13 +87,20 @@ def process_machine(
         # @@ not yet adding global rsync params logic here @@ !
         cmdlist = build_command(src, trg, exc, dry_run, verbose)
         message_text += f"\nSource {name}: {src} to {trg}\n"
+        message_text += "Command:\n" + " ".join(cmdlist)
+        message_text += (
+            "\n--------------------------------------------------------------------\n"
+        )
         out = call_command(cmdlist)
         message_text += out
         message_text += (
             "\n--------------------------------------------------------------------\n"
         )
-    # send the output off to me
-    message.send(message_text)
+    if console_output:
+        print(message_text)
+    else:
+        # send the output off to me
+        message.send(message_text)
 
 
 def cli():
@@ -118,6 +126,11 @@ def cli():
     parser.add_argument(
         "--verbose", help="pass verbose flag onto rsync", action="store_true"
     )
+    parser.add_argument(
+        "--console",
+        help="Don't use telegram, just print to console",
+        action="store_true",
+    )
     args = parser.parse_args()
     name = args.config
     dry = args.dry_run
@@ -132,6 +145,7 @@ def cli():
         override_config_path=opath,
         config_dir=cfgdir,
         global_config_path=gcfg,
+        console_output=args.console,
     )
 
 
