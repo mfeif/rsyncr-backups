@@ -4,4 +4,7 @@
 *.bak
 .ipynb_checkpoints
 *pytest_cache
-dist/
+dist
+mjf.telegram-send.conf
+.vscode
+/debug_*.py
