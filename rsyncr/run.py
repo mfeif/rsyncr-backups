@@ -103,7 +103,7 @@ def process_machine(
         message.send(message_text)
 
 
-def cli():
+def cli(force_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "config",
@@ -131,7 +131,7 @@ def cli():
         help="Don't use telegram, just print to console",
         action="store_true",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(args=force_args)
     name = args.config
     dry = args.dry_run
     ver = args.verbose
