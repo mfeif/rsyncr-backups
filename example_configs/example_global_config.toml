@@ -4,13 +4,20 @@
 
 # all these are optional, and have defaults in the python code
 
-# configs_dir = "/root/rsyncr"
-
 # if you need to tell explicit path for rsync
 #rsync_command = "/usr/local/bin/rsync"
 
-verbose = false
-dry_run = false
+# passes the --verbose flag to rsync; default is false
+#verbose = false
+
+# passes the --dry-run flag to rsync; default is false
+#dry_run = false
+
+# sends output to console instead of to telegram
+#console_override = false
+
+# captures output to this filename (in addition to console/or/telegram)
+# capture_file = "my_rsyncr_output.txt"
 
 # standard levels from logging module... info, warning, debug, etc
 #logging_level = "warning"
@@ -21,12 +28,8 @@ dry_run = false
 #override_rsync_params = []
 
 # this would be to add some more switches to rsync, perhaps ssh settings
-# or the like
-added_rsync_params = []
+# or the like; ignored if override_rsync_params is here
+#added_rsync_params = []
 
 # what paths should be excluded for every rsyncr job executed from this machine
 global_excludes = [".DS_Store", "*__pycache__", "*pytest_cache"]
-
-
-# tbd: stuff here to pass to 'telegram_send'
-#telegram_send_conf = "/etc/rsyncr/telegram_send.conf"

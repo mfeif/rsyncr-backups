@@ -8,3 +8,4 @@ dist
 mjf.telegram-send.conf
 .vscode
 /debug_*.py
+rsyncr.egg-info

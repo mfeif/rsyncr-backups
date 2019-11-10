@@ -1,0 +1,54 @@
+# this file is generally at /etc/rsyncr/config.{name}.toml
+# but can reside elsewhere with a command-line override 
+
+# ------------------------------
+# required items for the whole config file:
+
+# where the rsync'd files should go
+target_root = "/path/to/my/backups/"
+
+# ------------------------------
+# optional items for the whole config file:
+
+# if no host is given, rsyncr will assume the local host
+# can be "/" or "local" OR it can be a machine name like "pasilla:" or "george@10.0.0.2:"
+# host = "local"
+
+# passes the --verbose flag to rsync; default is false
+# verbose = false
+
+# passes the --dry-run flag to rsync; default is false
+# dry_run = false
+
+# what things to exclude from the rsync command for this machine;
+# will be added to global excludes and/or defaults for rsyncr
+# excludes = [
+#     "*.pyc",
+#     "*.bak"
+# ]
+
+# sends output to console instead of to telegram
+#console_override = false
+
+# captures output to this filename (in addition to console/or/telegram)
+# capture_file = "my_rsyncr_output.txt"
+
+# standard levels from logging module... info, warning, debug, etc
+# logging_level = "warning"
+
+# ------------------------------
+# sources that will be backed up; need at least one
+
+[sources.bogus]
+# where to rsync from:
+location = "/usr/local/share/"
+# the name of the dir inside of target_root to put the copies:
+target = "usr.local.share"
+# can add local excludes too
+excludes = [
+    'doc',
+    'man'
+]
+
+
+
