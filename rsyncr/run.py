@@ -80,8 +80,9 @@ def process_machine(
     else:
         mtoml = config.read_config(os.path.join(config_dir, f"config.{name}.toml"))
 
-    gconf = config.parse_string(gtoml)
-    mconf = config.parse_string(mtoml)
+    # make all the config strings into valid/checked confs
+    gconf = config.make_global_config(config.parse_string(gtoml))
+    mconf = config.make_machine_config(config.parse_string(mtoml))
     aconf = config.command_line_config(args)
 
     # merge all the configs properly
