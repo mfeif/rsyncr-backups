@@ -25,10 +25,10 @@ def build_command(conf, src):
         command.append(g)
 
     # global excludes
-    for e in conf["global_excludes"]:
+    for e in conf.get("global_excludes", []):
         command.append(f"--exclude={e}")
     # machine excludes
-    for e in conf["excludes"]:
+    for e in conf.get("excludes", []):
         command.append(f"--exclude={e}")
     # source excludes
     for e in conf["sources"][src].get("excludes", []):

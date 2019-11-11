@@ -108,10 +108,11 @@ def make_machine_config(fromtoml):
     else:
         current["host"] = fromtoml["host"]
 
-    # make a safe copy
-    current["excludes"] = []
-    for i in fromtoml.get("excludes", []):
-        current["excludes"].append(i)
+    # make a safe copy *IF* there is something to copy
+    if fromtoml.get("excludes"):
+        current["excludes"] = []
+        for i in fromtoml.get("excludes", []):
+            current["excludes"].append(i)
 
     # individual source configs:
     for n, val in fromtoml["sources"].items():
