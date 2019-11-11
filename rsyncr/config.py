@@ -1,12 +1,12 @@
 """Parse config files and command line switches to get what rsync needs to run.
 
 For precedence, it's:
-command line switches > machine level conf > global conf > defaults
+command line switches > job level conf > global conf > defaults
 ... BUT...
 for excludes (things passed to the '--exclude' feature of rsync) have a wrinkle:
 what to ALWAYS exclude (global_excludes) has sane defaults,
 but can be overridden in a a global config file
-and then machine and source/target excludes ADD to those
+and then job level and source/target excludes ADD to those
 """
 
 import os.path
@@ -17,7 +17,7 @@ from tomlkit import parse as toml_parse
 DEFAULTS = {
     # a dictionary containing sane defaults;
     # these are overridden by anything in global conf
-    # which is in turn overridden by anything in machine conf
+    # which is in turn overridden by anything in job conf
     # and ALL can be overridden by command line switches to rsyncr
     #
     # wrinkle about excludes; they don't override; they accumulate
@@ -60,26 +60,44 @@ def read_config(filename):
     return cfgstr
 
 
-def make_machine_config(fromtoml):
-    """fills in the optional config stuff for a machine, and does a wee bit of data
+def make(kind, filename=None, string=None):
+    """do all the steps to make a valid config for either kind=="global" or
+    kind is the name of the file/job to seek """
+    if string is None:
+        # grab the file
+        if filename is None:
+            if kind == "global":
+                filename = os.path.join(DEFAULTS["configs_dir"], "global.toml")
+            else:
+                filename = os.path.join(DEFAULTS["configs_dir"], f"config.{kind}.toml")
+        string = read_config(filename)
+    tomlobj = parse_string(string)
+    if kind == "global":
+        return _make_global_config(tomlobj)
+    else:
+        return _make_job_config(tomlobj)
+
+
+def _make_job_config(frojtoml):
+    """fills in the optional config stuff for a job, and does a wee bit of data
     checking"""
     # some basic checks...
-    assert "target_root" in fromtoml, "config missing target_root!"
+    assert "target_root" in frojtoml, "config missing target_root!"
     assert (
-        "sources" in fromtoml and len(fromtoml["sources"]) > 0
+        "sources" in frojtoml and len(frojtoml["sources"]) > 0
     ), "config missing sources or no sources there!"
-    for n in fromtoml["sources"]:
+    for n in frojtoml["sources"]:
         # these need a location, a target, and optional excludes
         assert (
-            "location" in fromtoml["sources"][n]
+            "location" in frojtoml["sources"][n]
         ), f"Need a 'location' in sources {n}!"
         assert (
-            fromtoml["sources"][n]["location"][0] == "/"
-        ), f"""'{fromtoml["sources"][n]['location']}' needs to be a valid path in sources {n}!"""
-        assert "target" in fromtoml["sources"][n], f"Need a 'target' in sources {n}!"
-        if "excludes" in fromtoml["sources"][n]:
+            frojtoml["sources"][n]["location"][0] == "/"
+        ), f"""'{frojtoml["sources"][n]['location']}' needs to be a valid path in sources {n}!"""
+        assert "target" in frojtoml["sources"][n], f"Need a 'target' in sources {n}!"
+        if "excludes" in frojtoml["sources"][n]:
             assert (
-                len(fromtoml["sources"][n]["excludes"]) >= 1
+                len(frojtoml["sources"][n]["excludes"]) >= 1
             ), f"Excludes should be a list in sources {n}!"
         # not checking actual excludes; that's an rsync matter and too hard to check
 
@@ -89,7 +107,7 @@ def make_machine_config(fromtoml):
     current = {"sources": {}}
 
     # one required item:
-    current["target_root"] = fromtoml["target_root"]
+    current["target_root"] = frojtoml["target_root"]
 
     # loop through some optional ones
     for i in [
@@ -99,29 +117,29 @@ def make_machine_config(fromtoml):
         "capture_file",
         "logging_level",
     ]:
-        if i in fromtoml:
-            current[i] = fromtoml.get(i)
+        if i in frojtoml:
+            current[i] = frojtoml.get(i)
 
-    if "host" not in fromtoml or fromtoml["host"] == "local":
+    if "host" not in frojtoml or frojtoml["host"] == "local":
         # no host implies local rsyncing, so use root
         current["host"] = "/"
     else:
-        current["host"] = fromtoml["host"]
+        current["host"] = frojtoml["host"]
 
     # make a safe copy *IF* there is something to copy
-    if fromtoml.get("excludes"):
+    if frojtoml.get("excludes"):
         current["excludes"] = []
-        for i in fromtoml.get("excludes", []):
+        for i in frojtoml.get("excludes", []):
             current["excludes"].append(i)
 
     # individual source configs:
-    for n, val in fromtoml["sources"].items():
+    for n, val in frojtoml["sources"].items():
         current["sources"][n] = {}
 
         # merge the paths for source, target here rather than downstream
         loc = fix_trailing_slashes(val["location"])
         current["sources"][n]["location"] = fix_trailing_slashes(
-            os.path.join(fromtoml["host"], loc)
+            os.path.join(frojtoml["host"], loc)
         )
 
         # we CAN override the normal behavior or root + target, and have an explicit
@@ -132,7 +150,7 @@ def make_machine_config(fromtoml):
             )
         else:
             current["sources"][n]["target"] = fix_trailing_slashes(
-                os.path.join(fromtoml["target_root"], val["target"])
+                os.path.join(frojtoml["target_root"], val["target"])
             )
         # if the host isn't local, os.path.join strips off the machine part,
         # which looks like this: 'machine:' so fix that...
@@ -147,13 +165,13 @@ def make_machine_config(fromtoml):
     return current
 
 
-def make_global_config(fromtoml):
+def _make_global_config(frojtoml):
     """check the vars declared in a conf object for this global install;
-    already parsed from toml"""
+    already parsed from toml """
+    # start with sane defaults:
     current = deepcopy(DEFAULTS)
 
-    # none of the below really has sanity checks for datatype and so on; assuming good
-    # stuff in conf and so on !!
+    # @@ none of the below really has sanity checks for datatype and so on
 
     # update these without any particulars...
     for i in [
@@ -164,36 +182,36 @@ def make_global_config(fromtoml):
         "capture_file",
         "logging_level",
     ]:
-        if fromtoml.get(i):
-            current[i] = fromtoml[i]
+        if frojtoml.get(i):
+            current[i] = frojtoml[i]
 
     # some that need a little more finesse:
     # these two are sequences, so we want to copy their elements rather than wholesale,
     # because they are stuffed with tomlkit artifacts
-    if "global_rsync_params" in fromtoml:
+    if "global_rsync_params" in frojtoml:
         current["global_rsync_params"] = []
-        for i in fromtoml.get("global_rsync_params", []):
+        for i in frojtoml.get("global_rsync_params", []):
             current["global_rsync_params"].append(i)
-    if "global_excludes" in fromtoml:
+    if "global_excludes" in frojtoml:
         current["global_excludes"] = []
-        for i in fromtoml.get("global_excludes", []):
+        for i in frojtoml.get("global_excludes", []):
             current["global_excludes"].append(i)
 
-    if "override_rsync_params" in fromtoml:
-        current["global_rsync_params"] = fromtoml["override_rsync_params"]
-    elif "added_rsync_params" in fromtoml:
-        current["global_rsync_params"] += fromtoml["added_rsync_params"]
+    if "override_rsync_params" in frojtoml:
+        current["global_rsync_params"] = frojtoml["override_rsync_params"]
+    elif "added_rsync_params" in frojtoml:
+        current["global_rsync_params"] += frojtoml["added_rsync_params"]
 
     return current
 
 
-def merge_configs(globalconf={}, machineconf={}, cmdline_args={}):
+def merge_configs(globalconf={}, jobconf={}, cmdline_args={}):
     """merge all the possible configs/switches into one conf object
     that is used to build command lines and such """
     # simple now, but edge conditions like adding rather than overwriting can come here
     current = deepcopy(DEFAULTS)
     current.update(globalconf)
-    current.update(machineconf)
+    current.update(jobconf)
     current.update(cmdline_args)
     return current
 

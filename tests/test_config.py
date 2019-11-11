@@ -2,7 +2,7 @@ from rsyncr import config
 from rsyncr import run
 
 # there are various cascades of overrides where
-# command line > machine config > global config > defaults
+# command line > job config > global config > defaults
 # so that can get tricky... some tests to make sure
 # intended results work...
 
@@ -25,7 +25,7 @@ global_excludes = ["these", "are", "excluded"]
 
 def test_globals_override_defaults():
     """make sure that set global config options override defaults"""
-    g = config.make_global_config(config.parse_string(override_gtoml))
+    g = config._make_global_config(config.parse_string(override_gtoml))
     merged = config.merge_configs(globalconf=g)
 
     assert (
@@ -51,7 +51,7 @@ def test_globals_override_defaults():
 
     # one for added rsyncs instead of override rsyncs
     gtoml = """added_rsync_params = ['one', 'two']"""
-    g = config.make_global_config(config.parse_string(gtoml))
+    g = config._make_global_config(config.parse_string(gtoml))
     merged = config.merge_configs(globalconf=g)
     assert (
         "two" in merged["global_rsync_params"]
@@ -59,7 +59,7 @@ def test_globals_override_defaults():
     ), "added_rsync_params didn't override right"
 
 
-override_mtoml = """
+override_jtoml = """
 target_root = "/path/to/my/backups/"
 host = "pasilla:"
 verbose = true
@@ -76,11 +76,11 @@ excludes = ['doc', 'man']
 """
 
 
-def test_machine_configs_override_defaults():
-    """make sure that passed machine config stuff properly
+def test_job_configs_override_defaults():
+    """make sure that passed job config stuff properly
     overrides default values """
-    g = config.make_global_config(config.parse_string(override_gtoml))
-    m = config.make_machine_config(config.parse_string(override_mtoml))
+    g = config._make_global_config(config.parse_string(override_gtoml))
+    m = config._make_job_config(config.parse_string(override_jtoml))
     merged = config.merge_configs(g, m)
     assert merged.get("verbose") is True, "'verbose' didn't overwrite defaults properly"
     assert merged.get("dry_run") is True, "'dry_run' didn't overwrite defaults properly"
@@ -95,8 +95,8 @@ def test_machine_configs_override_defaults():
     ), "'capture_file' didn't overwrite defaults properly"
 
 
-def test_machine_configs_override_globals():
-    """make sure that passed machine config stuff properly
+def test_job_configs_override_globals():
+    """make sure that passed job config stuff properly
     overrides global values """
     # stuff some new values to globals that we can overwrite...
     gtoml = """
@@ -111,8 +111,8 @@ def test_machine_configs_override_globals():
     added_rsync_params = ['way', 'down', 'south']
     global_excludes = ["nobody", "said", "anything"]
     """
-    g = config.make_global_config(config.parse_string(gtoml))
-    m = config.make_machine_config(config.parse_string(override_mtoml))
+    g = config._make_global_config(config.parse_string(gtoml))
+    m = config._make_job_config(config.parse_string(override_jtoml))
     merged = config.merge_configs(g, m)
     assert merged.get("verbose") is True, "'verbose' didn't overwrite defaults properly"
     assert merged.get("dry_run") is True, "'dry_run' didn't overwrite defaults properly"
@@ -129,17 +129,17 @@ def test_machine_configs_override_globals():
 
 def test_global_excludes_overwrite():
     """exclude clauses in global configs should replace default values, and
-    machine configs should completely replace globally defined ones"""
-    g = config.make_global_config(config.parse_string(override_gtoml))
+    job configs should completely replace globally defined ones"""
+    g = config._make_global_config(config.parse_string(override_gtoml))
     merged = config.merge_configs(g)
     assert merged["global_excludes"] == ["these", "are", "excluded"]
 
 
 def test_excludes_accumulate():
     """make sure that excludes accumulate and don't overwrite..."""
-    # just test it's getting values from machine config first...
-    g = config.make_global_config(config.parse_string(override_gtoml))
-    m = config.make_machine_config(config.parse_string(override_mtoml))
+    # just test it's getting values from job config first...
+    g = config._make_global_config(config.parse_string(override_gtoml))
+    m = config._make_job_config(config.parse_string(override_jtoml))
     merged = config.merge_configs(g, m)
     assert merged["excludes"] == ["nasty", "canasta"]
     # now test accumulation...
@@ -152,7 +152,7 @@ def test_excludes_accumulate():
 def test_accumulated_rsync_params():
     """make sure that rsync params can be ADDED to defaults"""
     gtoml = """added_rsync_params = ['--quiet', '--checksum']"""
-    mtoml = """
+    jtoml = """
 target_root = "/path/to/my/backups/"
 host = "pasilla:"
 
@@ -160,8 +160,8 @@ host = "pasilla:"
 location = "/usr/local/share/"
 target = "usr.local.share"
 """
-    g = config.make_global_config(config.parse_string(gtoml))
-    m = config.make_machine_config(config.parse_string(mtoml))
+    g = config._make_global_config(config.parse_string(gtoml))
+    m = config._make_job_config(config.parse_string(jtoml))
     c = {}
     merged = config.merge_configs(g, m, c)
     # check defaults are still there

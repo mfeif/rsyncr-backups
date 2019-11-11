@@ -27,7 +27,7 @@ def build_command(conf, src):
     # global excludes
     for e in conf.get("global_excludes", []):
         command.append(f"--exclude={e}")
-    # machine excludes
+    # job excludes
     for e in conf.get("excludes", []):
         command.append(f"--exclude={e}")
     # source excludes
@@ -57,8 +57,8 @@ def call_command(cmdargs):
         return output
 
 
-def process_machine(
-    name, override_config_path=None, config_dir=None, global_config_path=None, args=None
+def process_job(
+    name, job_config_path=None, config_dir=None, global_config_path=None, args=None
 ):
     """Handle the directories associated with 'name' for backups"""
     message_text = f"RsyncR is processing config {name}\n"
@@ -69,24 +69,20 @@ def process_machine(
 
     # if we pass in a dir to look for configs in, use it
     # otherwise use sane defaults set in config.py
-    if global_config_path:
-        gtoml = config.read_config(global_config_path)
-    else:
-        gtoml = config.read_config(os.path.join(config_dir, "global.toml"))
+    if global_config_path is None:
+        global_config_path = os.path.join(config_dir, "global.toml")
 
-    # machine/recipe level configs... what corresponds to one config.{thing}.toml file
-    if override_config_path:
-        mtoml = config.read_config(override_config_path)
-    else:
-        mtoml = config.read_config(os.path.join(config_dir, f"config.{name}.toml"))
+    # job/recipe level configs... what corresponds to one config.{thing}.toml file
+    if job_config_path is None:
+        job_config_path = os.path.join(config_dir, f"config.{name}.toml")
 
     # make all the config strings into valid/checked confs
-    gconf = config.make_global_config(config.parse_string(gtoml))
-    mconf = config.make_machine_config(config.parse_string(mtoml))
+    gconf = config.make("global", global_config_path)
+    jconf = config.make(name, job_config_path)
     aconf = config.command_line_config(args)
 
     # merge all the configs properly
-    conf = config.merge_configs(gconf, mconf, aconf)
+    conf = config.merge_configs(gconf, jconf, aconf)
 
     # now the directories/sources for sync'ing
     for name, d in conf["sources"].items():
@@ -116,15 +112,13 @@ def parse_command_line(force_args=None):
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "config",
-        help="unique machine/config name to read for rsync commands. example: mycomp",
+        help="unique job/config name to read for rsync commands. example: mycomp",
     )
     parser.add_argument(
-        "--override-config-path", help="(optional) what machine toml file to use"
+        "--job-config-path", help="(optional) what job toml file to use"
     )
 
-    parser.add_argument(
-        "--configs-dir", help="(optional) where to look for machine toml files"
-    )
+    parser.add_argument("--configs-dir", help="(optional) where to look for toml files")
 
     parser.add_argument(
         "--global-config-path", help="(optional) override global config settings"
@@ -151,13 +145,13 @@ def cli():
 
     # we need some of this stuff to know how/where to find other configs
     name = args.config
-    opath = args.override_config_path
+    jpath = args.job_config_path
     gcfg = args.global_config_path
     cfgdir = args.configs_dir
 
-    process_machine(
+    process_job(
         name,
-        override_config_path=opath,
+        job_config_path=jpath,
         config_dir=cfgdir,
         global_config_path=gcfg,
         args=args,

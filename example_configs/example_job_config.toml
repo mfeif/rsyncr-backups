@@ -11,7 +11,8 @@ target_root = "/path/to/my/backups/"
 # optional items for the whole config file:
 
 # if no host is given, rsyncr will assume the local host
-# can be "/" or "local" OR it can be a machine name like "pasilla:" or "george@10.0.0.2:"
+# can be "/" or "local" OR it can be an ssh machine name like 
+# "pasilla:" or "george@10.0.0.2:"
 # host = "local"
 
 # passes the --verbose flag to rsync; default is false
