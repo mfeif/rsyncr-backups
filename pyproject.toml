@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rsyncr"
-version = "0.1.0"
+version = "0.1.2"
 description = "Hackety thing to run rsync to backup files. Convenience/wrapper hacks."
 authors = ["Matt Feifarek <matt.feifarek@gmail.com>"]
 
