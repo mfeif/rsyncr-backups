@@ -46,11 +46,11 @@ def call_command(cmdargs):
     try:
         output = execute(*cmdargs, capture=True)
     except ExternalCommandFailed as e:
+        output = e.error_message
         if e.returncode in (23, 24):
             log.warning(
                 f"Return code {e.returncode}! {e.error_message} -- likely permissions?"
             )
-            output = e.error_message
         else:
             raise e
     finally:
