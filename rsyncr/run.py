@@ -60,10 +60,14 @@ def call_command(cmdargs):
 
 
 def process_job(
-    name, job_config_path=None, config_dir=None, global_config_path=None, args=None
+    config_name,
+    job_config_path=None,
+    config_dir=None,
+    global_config_path=None,
+    args=None,
 ):
-    """Handle the directories associated with 'name' for backups"""
-    message_text = f"RsyncR is processing config {name}\n"
+    """Handle the directories associated with 'config_name' for backups"""
+    message_text = f"RsyncR is processing config {config_name}\n"
 
     # determine where our config files are...
     if config_dir is None:
@@ -76,11 +80,11 @@ def process_job(
 
     # job/recipe level configs... what corresponds to one config.{thing}.toml file
     if job_config_path is None:
-        job_config_path = os.path.join(config_dir, f"config.{name}.toml")
+        job_config_path = os.path.join(config_dir, f"config.{config_name}.toml")
 
     # make all the config strings into valid/checked confs
     gconf = config.make("global", global_config_path)
-    jconf = config.make(name, job_config_path)
+    jconf = config.make(config_name, job_config_path)
     aconf = config.command_line_config(args)
 
     # merge all the configs properly
@@ -88,9 +92,9 @@ def process_job(
 
     # now the directories/sources for sync'ing
     any_errors = False
-    for name, d in conf["sources"].items():
-        cmdlist = build_command(conf, name)
-        message_text += f"\nSource {name}: {d['location']} to {d['target']}\n"
+    for source_name, d in conf["sources"].items():
+        cmdlist = build_command(conf, source_name)
+        message_text += f"\nSource {source_name}: {d['location']} to {d['target']}\n"
         message_text += "Command:\n" + " ".join(cmdlist)
         message_text += (
             "\n--------------------------------------------------------------------\n"
@@ -111,7 +115,7 @@ def process_job(
         else:
             how_many = len(conf["sources"].items())
             message.send(
-                f"RsyncR processed {how_many} sources in config {name} without errors."
+                f"RsyncR processed {how_many} sources in config {config_name} without errors."
             )
     if conf["capture_file"]:
         with open(conf["capture_file"], "w") as f:
