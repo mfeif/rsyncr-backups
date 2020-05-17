@@ -45,8 +45,10 @@ def call_command(cmdargs):
     # check tells it to not throw exception if there is a non-zero return code
     try:
         output = execute(*cmdargs, capture=True)
+        error_flag = False
     except ExternalCommandFailed as e:
         output = e.error_message
+        error_flag = True
         if e.returncode in (23, 24):
             log.warning(
                 f"Return code {e.returncode}! {e.error_message} -- likely permissions?"
@@ -54,7 +56,7 @@ def call_command(cmdargs):
         else:
             raise e
     finally:
-        return output
+        return output, error_flag
 
 
 def process_job(
@@ -85,6 +87,7 @@ def process_job(
     conf = config.merge_configs(gconf, jconf, aconf)
 
     # now the directories/sources for sync'ing
+    any_errors = False
     for name, d in conf["sources"].items():
         cmdlist = build_command(conf, name)
         message_text += f"\nSource {name}: {d['location']} to {d['target']}\n"
@@ -92,7 +95,9 @@ def process_job(
         message_text += (
             "\n--------------------------------------------------------------------\n"
         )
-        out = call_command(cmdlist)
+        out, source_error_flag = call_command(cmdlist)
+        # keep track of whether any of the sources had an error
+        any_errors = any_errors or source_error_flag
         message_text += out
         message_text += (
             "\n--------------------------------------------------------------------\n"
@@ -100,8 +105,14 @@ def process_job(
     if conf["console_override"]:
         print(message_text)
     else:
-        # send the output off
-        message.send(message_text)
+        # send the output off, but only detailed if there is an error
+        if any_errors:
+            message.send(message_text)
+        else:
+            how_many = len(conf["sources"].items())
+            message.send(
+                f"RsyncR processed {how_many} sources in config {name} without errors."
+            )
     if conf["capture_file"]:
         with open(conf["capture_file"], "w") as f:
             f.write(message_text)
